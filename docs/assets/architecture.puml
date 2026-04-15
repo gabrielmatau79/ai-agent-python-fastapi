@@ -1,0 +1,81 @@
+@startuml IA-Agent-FastAPI-Architecture
+title AI Agent FastAPI - Architecture
+
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+actor Client
+
+package "FastAPI App" {
+  [API Routers] as Routers
+  [AgentService] as AgentService
+  [MemoryService] as MemoryService
+  [RagService] as RagService
+  [LlmService] as LlmService
+  [ToolsService] as ToolsService
+  [McpClientService] as McpClientService
+}
+
+package "Providers" {
+  [OpenAI / Ollama / Anthropic] as LlmProviders
+  [InMemory / Redis Memory] as MemoryProviders
+  [InMemory / Redis RAG] as RagProviders
+}
+
+package "Utilities" {
+  [Language Detection] as LanguageDetection
+  [Prompt Builder] as PromptBuilder
+  [RAG Ingestion] as RagIngestion
+}
+
+package "Local MCP Server" {
+  [app.mcp_server.server] as LocalMcpServer
+}
+
+database "Redis" as Redis
+folder "RAG Documents" as RagDocs
+cloud "LLM APIs / Ollama" as LlmApis
+cloud "Remote MCP Servers" as RemoteMcp
+cloud "HTTP Tool Endpoints" as HttpTools
+
+Client --> Routers
+Routers --> AgentService : /agent/ask
+Routers --> MemoryService : /memory/*
+Routers --> RagService : /rag/reindex
+
+AgentService --> LanguageDetection
+AgentService --> MemoryService
+AgentService --> RagService
+AgentService --> PromptBuilder
+AgentService --> LlmService
+AgentService --> MemoryService : save messages
+
+LlmService --> ToolsService
+LlmService --> McpClientService
+LlmService --> LlmProviders
+LlmProviders --> LlmApis
+
+MemoryService --> MemoryProviders
+MemoryProviders --> Redis
+
+RagService --> RagProviders
+RagProviders --> RagIngestion
+RagIngestion --> RagDocs
+RagProviders --> Redis
+
+ToolsService --> HttpTools
+McpClientService --> RemoteMcp
+McpClientService --> LocalMcpServer
+
+note right of AgentService
+Main flow
+1. Detect language
+2. Load memory
+3. Retrieve RAG context
+4. Build messages
+5. Call LLM
+6. Persist conversation
+end note
+
+@enduml
