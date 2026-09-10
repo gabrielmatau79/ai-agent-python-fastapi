@@ -8,3 +8,17 @@ __pycache__/
 coverage/
 .env
 config/*.json
+
+# Local coding-assistant configuration
+.claude/
+.codex
+.agents/
+CLAUDE.md
+CLAUDE.MS
+AGENTS.md
+.cursor/
+.cursorrules
+.github/copilot-instructions.md
+.github/instructions/
+.github/prompts/
+.mcp.json
