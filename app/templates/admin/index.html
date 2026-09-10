@@ -1,59 +1,71 @@
 {% extends "admin/base.html" %}
 {% block content %}
 
-<section id="llm">
-  <h2>LLM</h2>
+<section id="llm" class="panel" data-panel="llm">
+  <header class="panel-header">
+    <h2>LLM</h2>
+    <p class="panel-help">Choose which AI provider answers requests, and the model it uses. Only the settings that provider needs are shown below.</p>
+  </header>
   <form hx-post="/admin/config/llm" hx-target="#feedback" hx-swap="innerHTML">
     <label>Provider
-      <select name="llmProvider">
+      <select name="llmProvider" id="llmProvider">
         {% for value in ["openai", "ollama", "anthropic"] %}
         <option value="{{ value }}" {% if sections.llm.llm_provider == value %}selected{% endif %}>{{ value }}</option>
         {% endfor %}
       </select>
     </label>
-    <label>Model <input type="text" name="llmModel" value="{{ sections.llm.llm_model }}" /></label>
     <label>Temperature <input type="number" step="0.1" name="llmTemperature" value="{{ sections.llm.llm_temperature }}" /></label>
     <label>Max tokens <input type="number" name="llmMaxTokens" value="{{ sections.llm.llm_max_tokens }}" /></label>
-    <label>Timeout (s) <input type="number" step="0.1" name="llmTimeoutSeconds" value="{{ sections.llm.llm_timeout_seconds }}" /></label>
-    <fieldset>
+    <label data-unsupported-providers="ollama">Timeout (s) <input type="number" step="0.1" name="llmTimeoutSeconds" value="{{ sections.llm.llm_timeout_seconds }}" /></label>
+    <fieldset data-provider="openai">
       <legend>OpenAI</legend>
       <label>API key {% if sections.llm.openai_api_key_set %}(set — leave blank to keep){% endif %}
         <input type="password" name="openaiApiKey" placeholder="{% if sections.llm.openai_api_key_set %}unchanged{% else %}not set{% endif %}" />
       </label>
-      <label>Model <input type="text" name="openaiModel" value="{{ sections.llm.openai_model }}" /></label>
+      <label>Model <input type="text" class="mono" name="openaiModel" value="{{ sections.llm.openai_model }}" /></label>
     </fieldset>
-    <fieldset>
+    <fieldset data-provider="ollama">
       <legend>Ollama</legend>
-      <label>Base URL <input type="text" name="ollamaBaseUrl" value="{{ sections.llm.ollama_base_url }}" /></label>
-      <label>Model <input type="text" name="ollamaModel" value="{{ sections.llm.ollama_model }}" /></label>
+      <label>Base URL <input type="text" class="mono" name="ollamaBaseUrl" value="{{ sections.llm.ollama_base_url }}" /></label>
+      <label>Model <input type="text" class="mono" name="ollamaModel" value="{{ sections.llm.ollama_model }}" /></label>
     </fieldset>
-    <fieldset>
+    <fieldset data-provider="anthropic">
       <legend>Anthropic</legend>
       <label>API key {% if sections.llm.anthropic_api_key_set %}(set — leave blank to keep){% endif %}
         <input type="password" name="anthropicApiKey" placeholder="{% if sections.llm.anthropic_api_key_set %}unchanged{% else %}not set{% endif %}" />
       </label>
-      <label>Model <input type="text" name="anthropicModel" value="{{ sections.llm.anthropic_model }}" /></label>
+      <label>Model <input type="text" class="mono" name="anthropicModel" value="{{ sections.llm.anthropic_model }}" /></label>
     </fieldset>
-    <button type="submit">Save LLM settings</button>
+    <div class="panel-actions">
+      <button type="submit">Save LLM settings</button>
+    </div>
   </form>
 </section>
 
-<section id="agent">
-  <h2>Agent</h2>
+<section id="agent" class="panel" data-panel="agent">
+  <header class="panel-header">
+    <h2>Agent</h2>
+    <p class="panel-help">Set the system prompt that shapes how your agent behaves, and how it decides which language to reply in.</p>
+  </header>
   <form hx-post="/admin/config/agent" hx-target="#feedback" hx-swap="innerHTML">
-    <label>Prompt <textarea name="agentPrompt" rows="4">{{ sections.agent.agent_prompt }}</textarea></label>
+    <label>Prompt <textarea class="mono" name="agentPrompt" rows="4">{{ sections.agent.agent_prompt }}</textarea></label>
     <label>Default response language <input type="text" name="defaultResponseLanguage" value="{{ sections.agent.default_response_language }}" /></label>
-    <label>
+    <label class="checkbox">
       <input type="hidden" name="languageDetectionEnabled" value="false" />
       <input type="checkbox" name="languageDetectionEnabled" value="true" {% if sections.agent.language_detection_enabled %}checked{% endif %} />
       Language detection enabled
     </label>
-    <button type="submit">Save Agent settings</button>
+    <div class="panel-actions">
+      <button type="submit">Save Agent settings</button>
+    </div>
   </form>
 </section>
 
-<section id="memory">
-  <h2>Memory</h2>
+<section id="memory" class="panel" data-panel="memory">
+  <header class="panel-header">
+    <h2>Memory</h2>
+    <p class="panel-help">Control how much conversation history the agent remembers per session, and where that history is stored.</p>
+  </header>
   <form hx-post="/admin/config/memory" hx-target="#feedback" hx-swap="innerHTML"
         onsubmit="return confirmMemoryChange(this)">
     <input type="hidden" name="_currentType" value="{{ sections.memory.agent_memory_type }}" />
@@ -66,13 +78,18 @@
     </label>
     <label>Window (messages) <input type="number" name="agentMemoryWindow" value="{{ sections.memory.agent_memory_window }}" /></label>
     <label>TTL (seconds) <input type="number" name="memoryTtlSeconds" value="{{ sections.memory.memory_ttl_seconds }}" /></label>
-    <label>Redis URL <input type="text" name="redisUrl" value="{{ sections.memory.redis_url }}" /></label>
-    <button type="submit">Save Memory settings</button>
+    <label>Redis URL <input type="text" class="mono" name="redisUrl" value="{{ sections.memory.redis_url }}" /></label>
+    <div class="panel-actions">
+      <button type="submit">Save Memory settings</button>
+    </div>
   </form>
 </section>
 
-<section id="rag">
-  <h2>RAG</h2>
+<section id="rag" class="panel" data-panel="rag">
+  <header class="panel-header">
+    <h2>RAG</h2>
+    <p class="panel-help">Let the agent search your own documents before answering. This works the same no matter which LLM provider you picked.</p>
+  </header>
   <p class="hint">Saving RAG or embedding changes triggers a full reindex of <code>rag_docs_path</code>.</p>
   <form hx-post="/admin/config/rag" hx-target="#feedback" hx-swap="innerHTML">
     <label>Provider
@@ -82,7 +99,7 @@
         {% endfor %}
       </select>
     </label>
-    <label>Docs path <input type="text" name="ragDocsPath" value="{{ sections.rag.rag_docs_path }}" /></label>
+    <label>Docs path <input type="text" class="mono" name="ragDocsPath" value="{{ sections.rag.rag_docs_path }}" /></label>
     <label>Top K <input type="number" name="ragTopK" value="{{ sections.rag.rag_top_k }}" /></label>
     <label>Chunk size <input type="number" name="ragChunkSize" value="{{ sections.rag.rag_chunk_size }}" /></label>
     <label>Chunk overlap <input type="number" name="ragChunkOverlap" value="{{ sections.rag.rag_chunk_overlap }}" /></label>
@@ -93,7 +110,7 @@
         {% endfor %}
       </select>
     </label>
-    <label>Embedding model <input type="text" name="embeddingModel" value="{{ sections.rag.embedding_model }}" /></label>
+    <label>Embedding model <input type="text" class="mono" name="embeddingModel" value="{{ sections.rag.embedding_model }}" /></label>
     <label>Vector store
       <select name="vectorStore">
         {% for value in ["memory", "redis"] %}
@@ -101,39 +118,49 @@
         {% endfor %}
       </select>
     </label>
-    <label>Vector index name <input type="text" name="vectorIndexName" value="{{ sections.rag.vector_index_name }}" /></label>
-    <button type="submit">Save RAG settings</button>
+    <label>Vector index name <input type="text" class="mono" name="vectorIndexName" value="{{ sections.rag.vector_index_name }}" /></label>
+    <div class="panel-actions">
+      <button type="submit">Save RAG settings</button>
+    </div>
   </form>
 </section>
 
-<section id="tools">
-  <h2>Tools</h2>
+<section id="tools" class="panel" data-panel="tools" data-requires-tools="true">
+  <header class="panel-header">
+    <h2>Tools</h2>
+    <p class="panel-help">Give the agent HTTP tools it can call during a conversation — for example, hitting your own API endpoints. Only available with providers that support tool calling.</p>
+  </header>
   <form hx-post="/admin/config/tools" hx-target="#feedback" hx-swap="innerHTML">
     <label>HTTP tools (JSON array)
-      <textarea name="llmToolsConfig" rows="6">{{ sections.tools.llm_tools_config }}</textarea>
+      <textarea class="mono" name="llmToolsConfig" rows="6">{{ sections.tools.llm_tools_config }}</textarea>
     </label>
     <label>Auth token {% if sections.tools.llm_tools_auth_token_set %}(set — leave blank to keep){% endif %}
       <input type="password" name="llmToolsAuthToken" placeholder="{% if sections.tools.llm_tools_auth_token_set %}unchanged{% else %}not set{% endif %}" />
     </label>
-    <label>Auth header <input type="text" name="llmToolsAuthHeader" value="{{ sections.tools.llm_tools_auth_header }}" /></label>
-    <label>Auth scheme <input type="text" name="llmToolsAuthScheme" value="{{ sections.tools.llm_tools_auth_scheme }}" /></label>
-    <button type="submit">Save Tools settings</button>
+    <label>Auth header <input type="text" class="mono" name="llmToolsAuthHeader" value="{{ sections.tools.llm_tools_auth_header }}" /></label>
+    <label>Auth scheme <input type="text" class="mono" name="llmToolsAuthScheme" value="{{ sections.tools.llm_tools_auth_scheme }}" /></label>
+    <div class="panel-actions">
+      <button type="submit">Save Tools settings</button>
+    </div>
   </form>
 </section>
 
-<section id="mcp">
-  <h2>MCP</h2>
+<section id="mcp" class="panel" data-panel="mcp" data-requires-tools="true">
+  <header class="panel-header">
+    <h2>MCP</h2>
+    <p class="panel-help">Connect external MCP servers so the agent can use their tools automatically. Only available with providers that support tool calling.</p>
+  </header>
   <form hx-post="/admin/config/mcp" hx-target="#feedback" hx-swap="innerHTML">
     <label>MCP servers (JSON object)
-      <textarea name="mcpServers" rows="6">{{ sections.mcp.mcp_servers }}</textarea>
+      <textarea class="mono" name="mcpServers" rows="6">{{ sections.mcp.mcp_servers }}</textarea>
     </label>
     <label>Tool timeout (ms) <input type="number" name="mcpToolTimeoutMs" value="{{ sections.mcp.mcp_tool_timeout_ms }}" /></label>
-    <label>
+    <label class="checkbox">
       <input type="hidden" name="mcpThrowOnLoadError" value="false" />
       <input type="checkbox" name="mcpThrowOnLoadError" value="true" {% if sections.mcp.mcp_throw_on_load_error %}checked{% endif %} />
       Throw on load error
     </label>
-    <label>
+    <label class="checkbox">
       <input type="hidden" name="mcpUseStandardContentBlocks" value="false" />
       <input type="checkbox" name="mcpUseStandardContentBlocks" value="true" {% if sections.mcp.mcp_use_standard_content_blocks %}checked{% endif %} />
       Use standard content blocks
@@ -141,19 +168,11 @@
     <label>Auth token {% if sections.mcp.mcp_auth_token_set %}(set — leave blank to keep){% endif %}
       <input type="password" name="mcpAuthToken" placeholder="{% if sections.mcp.mcp_auth_token_set %}unchanged{% else %}not set{% endif %}" />
     </label>
-    <label>Auth header <input type="text" name="mcpAuthHeader" value="{{ sections.mcp.mcp_auth_header }}" /></label>
-    <button type="submit">Save MCP settings</button>
+    <label>Auth header <input type="text" class="mono" name="mcpAuthHeader" value="{{ sections.mcp.mcp_auth_header }}" /></label>
+    <div class="panel-actions">
+      <button type="submit">Save MCP settings</button>
+    </div>
   </form>
 </section>
 
-<script>
-  function confirmMemoryChange(form) {
-    const current = form.elements["_currentType"].value;
-    const next = form.elements["agentMemoryType"].value;
-    if (current === "memory" && next !== "memory") {
-      return confirm("Switching away from in-memory sessions will drop all active conversation history. Continue?");
-    }
-    return true;
-  }
-</script>
 {% endblock %}

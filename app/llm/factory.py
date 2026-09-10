@@ -13,3 +13,11 @@ def create_llm_provider(settings: Settings) -> BaseLlmProvider:
     if settings.llm_provider == "anthropic":
         return AnthropicProvider(settings)
     return OpenAIProvider(settings)
+
+
+def supports_tools_by_provider() -> dict[str, bool]:
+    return {
+        "openai": OpenAIProvider.supports_tools,
+        "ollama": OllamaProvider.supports_tools,
+        "anthropic": AnthropicProvider.supports_tools,
+    }

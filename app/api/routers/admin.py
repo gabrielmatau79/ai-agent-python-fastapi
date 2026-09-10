@@ -9,6 +9,7 @@ from app.api.deps import get_config_service, get_settings, verify_api_key_for_pa
 from app.core.exceptions import ApplicationError
 from app.core.settings import Settings
 from app.core.templates import templates
+from app.llm.factory import supports_tools_by_provider
 from app.schemas.config import to_editable_sections
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -28,6 +29,7 @@ async def admin_index(
         {
             "sections": to_editable_sections(settings),
             "api_key": request.query_params.get("key", ""),
+            "supports_tools_by_provider": supports_tools_by_provider(),
         },
     )
 
@@ -47,7 +49,6 @@ def _patch_from_form(section: str, form: Any) -> dict[str, Any]:
     if section == "llm":
         return {
             "llm_provider": form.get("llmProvider"),
-            "llm_model": form.get("llmModel"),
             "llm_temperature": float(form.get("llmTemperature")),
             "llm_max_tokens": int(form.get("llmMaxTokens")),
             "llm_timeout_seconds": float(form.get("llmTimeoutSeconds")),

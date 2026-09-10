@@ -108,6 +108,20 @@ async def test_admin_page_renders_all_sections(
 
 
 @pytest.mark.asyncio
+async def test_admin_page_exposes_tools_support_per_provider(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _base_env(monkeypatch, tmp_path)
+    async with build_client() as (client, _recording):
+        response = await client.get("/admin/")
+        assert response.status_code == 200
+        assert '"openai": true' in response.text
+        assert '"ollama": false' in response.text
+        assert '"anthropic": true' in response.text
+        assert 'data-requires-tools="true"' in response.text
+
+
+@pytest.mark.asyncio
 async def test_get_editable_config_never_leaks_secrets(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

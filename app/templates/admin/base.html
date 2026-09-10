@@ -2,25 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Agent Admin</title>
   <link rel="stylesheet" href="/static/admin.css" />
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 <body hx-headers='{"X-API-Key": "{{ api_key }}"}'>
-  <header>
-    <h1>Agent Configuration</h1>
-    <nav>
-      <a href="#llm">LLM</a>
-      <a href="#agent">Agent</a>
-      <a href="#memory">Memory</a>
-      <a href="#rag">RAG</a>
-      <a href="#tools">Tools</a>
-      <a href="#mcp">MCP</a>
-    </nav>
-  </header>
-  <div id="feedback"></div>
-  <main>
-    {% block content %}{% endblock %}
-  </main>
+  <div class="shell">
+    <aside class="rail">
+      <div class="rail-header">
+        <p class="eyebrow">Agent pipeline</p>
+        <h1>Configuration</h1>
+      </div>
+      <nav class="steps" id="steps">
+        {% for step in [
+          ("llm", "1", "LLM", false),
+          ("agent", "2", "Agent", false),
+          ("memory", "3", "Memory", false),
+          ("rag", "4", "RAG", false),
+          ("tools", "5", "Tools", true),
+          ("mcp", "6", "MCP", true),
+        ] %}
+        <a href="#{{ step[0] }}" class="step" data-step="{{ step[0] }}" {% if step[3] %}data-requires-tools="true"{% endif %}>
+          <span class="step-dot">{{ step[1] }}</span>
+          <span class="step-label">{{ step[2] }}</span>
+        </a>
+        {% endfor %}
+      </nav>
+    </aside>
+    <main class="content">
+      <div id="feedback"></div>
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script>
+    window.__supportsToolsByProvider = {{ supports_tools_by_provider | tojson }};
+  </script>
+  <script src="/static/admin.js"></script>
 </body>
 </html>
