@@ -187,6 +187,28 @@ Compose defaults to `OLLAMA_BASE_URL=http://ollama:11434` and the small
 unless runtime overrides have been saved there. Inside the app container,
 `localhost` refers to the app itself, so use `http://ollama:11434` for Ollama.
 
+## Versioning
+
+`pyproject.toml`'s `version` field is the single source of truth; `app/main.py`
+reads it via `importlib.metadata` rather than hardcoding it, so `/docs` and
+`/openapi.json` always match the installed package.
+
+The version bumps automatically, based on [Conventional Commits](https://www.conventionalcommits.org/):
+
+- While a PR against `main` is open, `.github/workflows/version-bump.yml`
+  inspects the PR's commit messages and pushes a `chore(release): bump
+  version to X.Y.Z` commit onto the PR branch itself — `feat:` bumps minor,
+  `fix:` bumps patch, a `!` or `BREAKING CHANGE:` footer bumps major, anything
+  else (`docs:`, `chore:`, `test:`, ...) doesn't bump. By the time you merge,
+  `main` already has the right version.
+- After the merge lands on `main`, `.github/workflows/release-tag.yml` tags
+  that commit `vX.Y.Z` and publishes a GitHub Release with auto-generated
+  notes.
+
+Both workflows only touch the PR branch or a tag, never `main` directly, so
+they work unmodified with a protected `main` branch. The bump logic itself
+lives in `scripts/bump_version.py`, covered by `tests/unit/test_bump_version.py`.
+
 ## CI
 
 GitHub Actions now validates:

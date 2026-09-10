@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as package_version
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -21,11 +23,18 @@ from app.core.settings import Settings
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
+def get_app_version() -> str:
+    try:
+        return package_version("ai-agent-python-fastapi")
+    except PackageNotFoundError:
+        return "0.0.0"
+
+
 def create_app() -> FastAPI:
     settings = Settings()
     app = FastAPI(
         title=settings.app_name,
-        version="0.1.0",
+        version=get_app_version(),
         openapi_url="/openapi.json",
         docs_url="/docs",
         lifespan=lifespan,
