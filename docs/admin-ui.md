@@ -4,6 +4,31 @@ A server-rendered admin page at `GET /admin/` lets an operator edit LLM, agent,
 memory, RAG, tools, and MCP settings while the app is running, with no restart
 required.
 
+## Navigation
+
+The page is organized as six steps in a left-hand rail, one per configuration
+section: **LLM → Agent → Memory → RAG → Tools → MCP**. Clicking a step shows
+its panel; a step is marked done (in local browser storage only, so this is
+cosmetic and per-browser) after its form saves successfully.
+
+The UI adapts to the LLM provider selected in step 1:
+
+- The LLM step only shows the fieldset for the currently selected provider
+  (OpenAI, Ollama, or Anthropic) — the other two stay in the DOM but hidden.
+- The **Tools** and **MCP** steps are hidden entirely, and their nav links
+  disappear, when the selected provider's `supports_tools` capability is
+  `false` (Ollama, at the time of writing). If you're on one of those steps
+  and switch to an unsupported provider, the UI redirects you back to the LLM
+  step. OpenAI and Anthropic both support tools, so both steps stay visible
+  for them.
+- RAG is always shown regardless of provider — it's core retrieval
+  infrastructure that every request goes through, not a provider-specific
+  capability.
+
+This logic lives in `app/static/admin.js`, driven by the `supports_tools`
+flag each LLM provider class declares (`app/llm/base.py` and the provider
+implementations) and passed to the template as `supports_tools_by_provider`.
+
 ## Access
 
 - If `API_KEY_ENABLED=false` (the default), `/admin/` is open, same as the
