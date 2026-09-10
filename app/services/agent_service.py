@@ -21,6 +21,7 @@ class AgentService:
         self._rag_service = rag_service
         self._llm_service = llm_service
         self._memory_service = memory_service
+        self._memory_revision = memory_service.revision
 
     async def ask(self, payload: AgentAskRequest) -> str:
         language = payload.user_lang
@@ -42,6 +43,7 @@ class AgentService:
             user_input=payload.user_input,
         )
         answer = await self._llm_service.generate(messages, session_id=payload.session_id)
-        await self._memory_service.add_message(payload.session_id, "user", payload.user_input)
-        await self._memory_service.add_message(payload.session_id, "assistant", answer)
+        await self._memory_service.add_turn(
+            payload.session_id, payload.user_input, answer, revision=self._memory_revision
+        )
         return answer

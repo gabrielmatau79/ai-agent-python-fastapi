@@ -1,0 +1,64 @@
+name: Version Bump
+
+# Bumps pyproject.toml's version as a commit on the PR branch itself, based on
+# Conventional Commits in the PR, so main already has the right version by the
+# time the PR is merged. This deliberately avoids ever committing to `main`
+# directly, since `main` has branch protection that would reject it.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version-bump-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  bump:
+    name: Bump version
+    runs-on: ubuntu-latest
+    # Same-repo branches only: a fork's PR branch can't be pushed to with this token.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.event.pull_request.base.ref }}
+
+      - name: Compute and apply version bump
+        run: |
+          python scripts/bump_version.py \
+            "origin/${{ github.event.pull_request.base.ref }}..HEAD" \
+            --base-ref "origin/${{ github.event.pull_request.base.ref }}" \
+            --apply
+
+      - name: Commit and push bump, if any
+        run: |
+          if git diff --quiet -- pyproject.toml; then
+            echo "No version bump needed."
+            exit 0
+          fi
+          NEW_VERSION=$(python -c "
+          from pathlib import Path
+          from scripts.bump_version import read_current_version
+          print(read_current_version(Path('pyproject.toml')))
+          ")
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "chore(release): bump version to $NEW_VERSION"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"

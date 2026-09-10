@@ -1,0 +1,17 @@
+{% if ok %}
+<div class="feedback feedback-ok">
+  <strong>Saved.</strong>
+  {% if rebuilt %}Rebuilt: {{ rebuilt | join(", ") }}.{% else %}No services needed to be rebuilt.{% endif %}
+  {% if warnings %}
+  <ul>
+    {% for warning in warnings %}
+    <li>{{ warning }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% else %}
+<div class="feedback feedback-error">
+  <strong>Error:</strong> {{ message }}
+</div>
+{% endif %}

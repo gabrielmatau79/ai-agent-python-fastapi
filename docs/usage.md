@@ -14,6 +14,17 @@ Open:
 
 - `http://localhost:8000/docs`
 - `http://localhost:8000/openapi.json`
+- `http://localhost:8000/admin/` (see [admin-ui.md](./admin-ui.md))
+
+## Admin UI
+
+`/admin/` is a step-by-step configuration page (LLM, Agent, Memory, RAG,
+Tools, MCP) that applies changes to the running app without a restart, and
+persists them to `config/runtime-overrides.json`. It's the fastest way to
+try a different provider, model, or tool/MCP setup without editing `.env`
+and restarting the process. Fields and steps adapt to the selected LLM
+provider's capabilities — for example, Tools and MCP are hidden for
+providers that don't support tool calling.
 
 ## Example Request
 

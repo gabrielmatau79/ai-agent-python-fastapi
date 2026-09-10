@@ -1,3 +1,5 @@
+from fnmatch import fnmatch
+
 import pytest
 
 from app.core.settings import Settings
@@ -56,6 +58,11 @@ class FakeRedis:
     async def delete(self, key: str) -> None:
         self.storage.pop(key, None)
 
+    async def scan_iter(self, match: str, count: int):
+        for key in list(self.storage):
+            if fnmatch(key, match):
+                yield key
+
 
 @pytest.mark.asyncio
 async def test_redis_memory_uses_ttl_and_window() -> None:
@@ -68,3 +75,13 @@ async def test_redis_memory_uses_ttl_and_window() -> None:
     history = await provider.get_history("s1")
     assert [item.content for item in history] == ["two", "three"]
     assert fake_redis.ttl["chat:history:s1"] == 60
+
+
+async def test_clear_all_removes_histories_but_preserves_other_redis_data() -> None:
+    client = FakeRedis()
+    provider = RedisMemoryProvider(Settings(), client=client)  # type: ignore[arg-type]
+    await provider.add_message("one", "user", "old")
+    await provider.add_message("two", "assistant", "old")
+    client.storage["rag:documents"] = ["keep"]
+    await provider.clear_all()
+    assert client.storage == {"rag:documents": ["keep"]}

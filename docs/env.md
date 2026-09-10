@@ -108,3 +108,12 @@ MCP_SERVERS={"localAgent":{"transport":"stdio","command":"python","args":["-m","
 | `API_KEY_VALUE` | Secret API key value. |
 
 Secrets are redacted from logs and from `GET /api/v1/config/effective-sanitized`.
+
+## Runtime config
+
+| Variable | Description |
+| --- | --- |
+| `RUNTIME_CONFIG_PATH` | Path to the JSON file holding admin-UI overrides applied on top of `.env`. Defaults to `config/runtime-overrides.json`. |
+
+See [docs/admin-ui.md](./admin-ui.md) for how the admin UI at `/admin/` uses
+this file to apply configuration changes without restarting the app.

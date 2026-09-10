@@ -32,14 +32,15 @@ class OpenAIProvider(BaseLlmProvider):
         tools: list[BaseTool] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> str:
+        _ = metadata
         try:
             if not tools:
-                result = await self._client.ainvoke(messages, metadata=metadata)
+                result = await self._client.ainvoke(messages)
                 return str(result.content).strip()
 
             tool_enabled = self._client.bind_tools(tools)
             conversation = list(messages)
-            response: AIMessage = await tool_enabled.ainvoke(conversation, metadata=metadata)
+            response: AIMessage = await tool_enabled.ainvoke(conversation)
             while getattr(response, "tool_calls", None):
                 conversation.append(response)
                 for tool_call in response.tool_calls:
@@ -57,7 +58,7 @@ class OpenAIProvider(BaseLlmProvider):
                             name=tool_call["name"],
                         )
                     )
-                response = await tool_enabled.ainvoke(conversation, metadata=metadata)
+                response = await tool_enabled.ainvoke(conversation)
             return str(response.content).strip()
         except Exception as exc:  # pragma: no cover - provider errors are integration-dependent
             raise ExternalServiceError(f"OpenAI generation failed: {exc}") from exc

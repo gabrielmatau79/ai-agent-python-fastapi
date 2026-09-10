@@ -51,3 +51,10 @@ class RedisMemoryProvider(BaseMemoryProvider):
             await self._client.delete(self._key(session_id))
         except RedisError as exc:
             raise ExternalServiceError(f"Redis memory clear failed: {exc}") from exc
+
+    async def clear_all(self) -> None:
+        try:
+            async for key in self._client.scan_iter(match="chat:history:*", count=100):
+                await self._client.delete(key)
+        except RedisError as exc:
+            raise ExternalServiceError(f"Redis memory clear failed: {exc}") from exc

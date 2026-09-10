@@ -10,6 +10,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.exceptions import ConfigurationError
 
+SECRET_FIELDS = frozenset(
+    {
+        "openai_api_key",
+        "anthropic_api_key",
+        "llm_tools_auth_token",
+        "mcp_auth_token",
+        "api_key_value",
+    }
+)
+
 
 class HttpToolConfig(BaseModel):
     name: str
@@ -113,6 +123,8 @@ class Settings(BaseSettings):
     api_key_header_name: str = "X-API-Key"
     api_key_value: SecretStr | None = None
 
+    runtime_config_path: Path = Path("config/runtime-overrides.json")
+
     @field_validator("cors_allow_origins", mode="before")
     @classmethod
     def parse_origins(cls, value: Any) -> Any:
@@ -171,15 +183,8 @@ class Settings(BaseSettings):
         return self.anthropic_model or self.llm_model
 
     def sanitized_dict(self) -> dict[str, Any]:
-        secret_fields = {
-            "openai_api_key",
-            "anthropic_api_key",
-            "llm_tools_auth_token",
-            "mcp_auth_token",
-            "api_key_value",
-        }
         data = self.model_dump(mode="json")
-        for field_name in secret_fields:
+        for field_name in SECRET_FIELDS:
             if data.get(field_name):
                 data[field_name] = "***REDACTED***"
         return data

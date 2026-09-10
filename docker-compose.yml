@@ -4,7 +4,10 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - docs/env-examples/.env.docker.example
+      - ./.env
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: qwen2.5:0.5b
     ports:
       - "8000:8000"
     depends_on:
@@ -17,6 +20,7 @@ services:
       retries: 5
     volumes:
       - ./sample_docs:/app/sample_docs:ro
+      - app_config:/app/config
 
   redis:
     image: redis:7-alpine
@@ -28,3 +32,19 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  app_config:
+  ollama_data:

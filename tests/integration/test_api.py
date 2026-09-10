@@ -12,6 +12,9 @@ class FakeLlmService:
     async def generate(self, messages: list[Any], *, session_id: str) -> str:
         return f"mocked answer for {session_id}: {messages[-1].content}"
 
+    async def close(self) -> None:
+        return
+
 
 @asynccontextmanager
 async def build_client() -> AsyncIterator[AsyncClient]:
