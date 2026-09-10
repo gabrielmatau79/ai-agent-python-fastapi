@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Agent Admin</title>
+  <link rel="stylesheet" href="/static/admin.css" />
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body hx-headers='{"X-API-Key": "{{ api_key }}"}'>
+  <header>
+    <h1>Agent Configuration</h1>
+    <nav>
+      <a href="#llm">LLM</a>
+      <a href="#agent">Agent</a>
+      <a href="#memory">Memory</a>
+      <a href="#rag">RAG</a>
+      <a href="#tools">Tools</a>
+      <a href="#mcp">MCP</a>
+    </nav>
+  </header>
+  <div id="feedback"></div>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
