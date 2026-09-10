@@ -9,21 +9,28 @@ from app.core.lifespan import AppContainer, build_container, close_container
 from app.core.settings import Settings
 
 
-async def _build_container(tmp_path: Path) -> AppContainer:
-    settings = Settings(
-        llm_provider="ollama",
-        agent_memory_type="memory",
-        rag_provider="in_memory",
-        mcp_servers="{}",
-        llm_tools_config="[]",
-        runtime_config_path=tmp_path / "overrides.json",
-    )
-    return await build_container(settings)
+def _set_base_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    # These must be env vars (not Settings(**kwargs)) because ConfigService
+    # rebuilds Settings from scratch on every apply_patch() call — only env
+    # vars and persisted overrides survive that reconstruction, kwargs don't.
+    monkeypatch.setenv("LLM_PROVIDER", "ollama")
+    monkeypatch.setenv("AGENT_MEMORY_TYPE", "memory")
+    monkeypatch.setenv("RAG_PROVIDER", "in_memory")
+    monkeypatch.setenv("MCP_SERVERS", "{}")
+    monkeypatch.setenv("LLM_TOOLS_CONFIG", "[]")
+    monkeypatch.setenv("RUNTIME_CONFIG_PATH", str(tmp_path / "overrides.json"))
+
+
+async def _build_container(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> AppContainer:
+    _set_base_env(monkeypatch, tmp_path)
+    return await build_container(Settings())
 
 
 @pytest.mark.asyncio
-async def test_apply_patch_agent_only_rebuilds_agent_service(tmp_path: Path) -> None:
-    container = await _build_container(tmp_path)
+async def test_apply_patch_agent_only_rebuilds_agent_service(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    container = await _build_container(monkeypatch, tmp_path)
     try:
         llm_service = container.llm_service
         tools_service = container.tools_service
@@ -45,8 +52,10 @@ async def test_apply_patch_agent_only_rebuilds_agent_service(tmp_path: Path) -> 
 
 
 @pytest.mark.asyncio
-async def test_apply_patch_llm_change_rebuilds_only_llm(tmp_path: Path) -> None:
-    container = await _build_container(tmp_path)
+async def test_apply_patch_llm_change_rebuilds_only_llm(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    container = await _build_container(monkeypatch, tmp_path)
     try:
         old_llm_service = container.llm_service
         tools_service = container.tools_service
@@ -55,6 +64,7 @@ async def test_apply_patch_llm_change_rebuilds_only_llm(tmp_path: Path) -> None:
         result = await container.config_service.apply_patch({"llm_model": "llama3.1:70b"})
 
         assert result.rebuilt == ["llm"]
+        assert container.settings.llm_provider == "ollama"
         assert container.llm_service is not old_llm_service
         assert container.tools_service is tools_service
         assert container.mcp_client_service is mcp_client_service
@@ -64,9 +74,9 @@ async def test_apply_patch_llm_change_rebuilds_only_llm(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_apply_patch_invalid_tools_json_does_not_rebuild_or_persist(
-    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    container = await _build_container(tmp_path)
+    container = await _build_container(monkeypatch, tmp_path)
     try:
         tools_service = container.tools_service
         path = container.settings.runtime_config_path
@@ -81,8 +91,10 @@ async def test_apply_patch_invalid_tools_json_does_not_rebuild_or_persist(
 
 
 @pytest.mark.asyncio
-async def test_apply_patch_mcp_change_cascades_to_llm_but_not_tools(tmp_path: Path) -> None:
-    container = await _build_container(tmp_path)
+async def test_apply_patch_mcp_change_cascades_to_llm_but_not_tools(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    container = await _build_container(monkeypatch, tmp_path)
     try:
         old_mcp_client_service = container.mcp_client_service
         old_llm_service = container.llm_service
@@ -91,6 +103,7 @@ async def test_apply_patch_mcp_change_cascades_to_llm_but_not_tools(tmp_path: Pa
         result = await container.config_service.apply_patch({"mcp_servers": "{}"})
 
         assert set(result.rebuilt) == {"mcp", "llm"}
+        assert container.settings.llm_provider == "ollama"
         assert container.mcp_client_service is not old_mcp_client_service
         assert container.llm_service is not old_llm_service
         assert container.tools_service is tools_service
@@ -99,8 +112,10 @@ async def test_apply_patch_mcp_change_cascades_to_llm_but_not_tools(tmp_path: Pa
 
 
 @pytest.mark.asyncio
-async def test_apply_patch_persists_overrides_to_disk(tmp_path: Path) -> None:
-    container = await _build_container(tmp_path)
+async def test_apply_patch_persists_overrides_to_disk(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    container = await _build_container(monkeypatch, tmp_path)
     try:
         await container.config_service.apply_patch({"agent_prompt": "Persisted prompt"})
         overrides = load_overrides(container.settings.runtime_config_path)
@@ -110,8 +125,10 @@ async def test_apply_patch_persists_overrides_to_disk(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_apply_patch_serializes_concurrent_writes(tmp_path: Path) -> None:
-    container = await _build_container(tmp_path)
+async def test_apply_patch_serializes_concurrent_writes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    container = await _build_container(monkeypatch, tmp_path)
     try:
         await asyncio.gather(
             container.config_service.apply_patch({"agent_prompt": "From A"}),
