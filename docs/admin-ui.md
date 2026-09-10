@@ -33,6 +33,12 @@ app container is recreated. Keep `RUNTIME_CONFIG_PATH` at its default value to
 use this mount; a custom path needs its own writable, persistent directory.
 `docker compose down -v` deletes the volume and its saved configuration.
 
+Changing the agent prompt, default response language, or language detection setting
+clears all session histories in the active memory backend (in-memory or Redis).
+Saving identical values preserves history. Responses already generating with the
+old instructions may finish, but are not saved back into the cleared memory.
+Other configuration sections do not trigger this instruction-related reset.
+
 ## Known limitations
 
 - **Secrets on disk**: once you set an API key or auth token from the admin

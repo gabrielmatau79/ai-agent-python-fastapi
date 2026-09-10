@@ -131,6 +131,16 @@ class ConfigService:
                 await self._rebuild_llm(new_settings)
                 rebuilt.append("llm")
 
+            agent_changed = any(
+                getattr(current_settings, name) != getattr(new_settings, name)
+                for name in AGENT_FIELDS
+            )
+            if agent_changed:
+                await self._container.memory_service.clear_all()
+                warnings.append(
+                    "All session histories were cleared because agent instructions changed."
+                )
+
             self._container.settings = new_settings
             self._container.agent_service = AgentService(
                 new_settings,

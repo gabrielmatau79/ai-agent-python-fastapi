@@ -28,3 +28,7 @@ class BaseMemoryProvider(ABC):
     @abstractmethod
     async def clear(self, session_id: str) -> None:
         raise NotImplementedError
+
+    @abstractmethod
+    async def clear_all(self) -> None:
+        raise NotImplementedError

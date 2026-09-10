@@ -22,3 +22,6 @@ class InMemoryMemoryProvider(BaseMemoryProvider):
 
     async def clear(self, session_id: str) -> None:
         self._store.pop(session_id, None)
+
+    async def clear_all(self) -> None:
+        self._store.clear()

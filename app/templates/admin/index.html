@@ -46,6 +46,7 @@
   <header class="panel-header">
     <h2>Agent</h2>
     <p class="panel-help">Set the system prompt that shapes how your agent behaves, and how it decides which language to reply in.</p>
+    <p class="panel-help">Changing these settings clears conversation history for all sessions. Saving unchanged values keeps history.</p>
   </header>
   <form hx-post="/admin/config/agent" hx-target="#feedback" hx-swap="innerHTML">
     <label>Prompt <textarea class="mono" name="agentPrompt" rows="4">{{ sections.agent.agent_prompt }}</textarea></label>

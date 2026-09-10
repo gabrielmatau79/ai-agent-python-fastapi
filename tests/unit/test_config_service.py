@@ -7,6 +7,7 @@ from app.core.config_store import load_overrides
 from app.core.exceptions import ValidationApplicationError
 from app.core.lifespan import AppContainer, build_container, close_container
 from app.core.settings import Settings
+from app.schemas.agent import AgentAskRequest
 
 
 def _set_base_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -138,4 +139,73 @@ async def test_apply_patch_serializes_concurrent_writes(
         assert overrides["agent_prompt"] == "From A"
         assert overrides["default_response_language"] == "es"
     finally:
+        await close_container(container)
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"agent_prompt": "Your name is Luna."},
+        {"default_response_language": "fr"},
+        {"language_detection_enabled": False},
+    ],
+)
+async def test_agent_changes_clear_all_session_histories(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, patch: dict[str, object]
+) -> None:
+    container = await _build_container(monkeypatch, tmp_path)
+    try:
+        for session in ("one", "two"):
+            await container.memory_service.add_message(session, "assistant", "My name is Sol.")
+        result = await container.config_service.apply_patch(patch)
+        for session in ("one", "two"):
+            assert await container.memory_service.get_history(session) == []
+        assert any("cleared" in warning for warning in result.warnings)
+    finally:
+        await close_container(container)
+
+
+async def test_saving_unchanged_prompt_preserves_history(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    container = await _build_container(monkeypatch, tmp_path)
+    try:
+        await container.memory_service.add_message("one", "user", "hello")
+        await container.config_service.apply_patch(
+            {"agent_prompt": container.settings.agent_prompt}
+        )
+        assert len(await container.memory_service.get_history("one")) == 1
+    finally:
+        await close_container(container)
+
+
+async def test_inflight_answer_does_not_restore_history_after_prompt_change(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    container = await _build_container(monkeypatch, tmp_path)
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def generate(*args: object, **kwargs: object) -> str:
+        started.set()
+        await release.wait()
+        return "My name is Sol."
+
+    monkeypatch.setattr(container.llm_service, "generate", generate)
+    task = asyncio.create_task(
+        container.agent_service.ask(
+            AgentAskRequest(userInput="What is your name?", sessionId="one")
+        )
+    )
+    try:
+        await asyncio.wait_for(started.wait(), timeout=5)
+        await container.config_service.apply_patch({"agent_prompt": "Your name is Luna."})
+        release.set()
+        await task
+        assert await container.memory_service.get_history("one") == []
+        await container.agent_service.ask(AgentAskRequest(userInput="Hello", sessionId="one"))
+        assert len(await container.memory_service.get_history("one")) == 2
+    finally:
+        release.set()
+        await task
         await close_container(container)
