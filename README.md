@@ -155,6 +155,17 @@ cp docs/env-examples/.env.docker.example .env
 docker compose up --build
 ```
 
+This starts `app`, `redis`, and an `ollama` container (the default `.env.docker.example` targets `LLM_PROVIDER=ollama` at `http://ollama:11434`). The `ollama` container ships with no models — pull one before your first request:
+
+```bash
+docker compose exec ollama ollama pull qwen2.5:0.5b
+```
+
+Compose defaults to `OLLAMA_BASE_URL=http://ollama:11434` and the small
+`qwen2.5:0.5b` model for smoke tests. These values also appear in the admin UI
+unless runtime overrides have been saved there. Inside the app container,
+`localhost` refers to the app itself, so use `http://ollama:11434` for Ollama.
+
 ## CI
 
 GitHub Actions now validates:

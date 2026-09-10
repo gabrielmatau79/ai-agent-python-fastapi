@@ -18,7 +18,8 @@ COPY sample_docs ./sample_docs
 RUN pip install --upgrade pip \
     && pip install .
 
-RUN useradd --create-home --shell /usr/sbin/nologin appuser
+RUN useradd --create-home --shell /usr/sbin/nologin appuser \
+    && install -d -m 0700 -o appuser -g appuser /app/config
 USER appuser
 
 EXPOSE 8000

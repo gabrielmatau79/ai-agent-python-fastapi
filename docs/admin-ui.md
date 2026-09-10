@@ -26,6 +26,13 @@ Each section is its own form. Saving a section calls the same
    restart. Precedence: `Settings` defaults < `.env`/env vars <
    `config/runtime-overrides.json`.
 
+With Docker Compose, `/app/config` is stored in the `app_config` named volume.
+The image creates this directory with ownership assigned to `appuser`, so the
+non-root application can save changes. The volume preserves overrides when the
+app container is recreated. Keep `RUNTIME_CONFIG_PATH` at its default value to
+use this mount; a custom path needs its own writable, persistent directory.
+`docker compose down -v` deletes the volume and its saved configuration.
+
 ## Known limitations
 
 - **Secrets on disk**: once you set an API key or auth token from the admin
