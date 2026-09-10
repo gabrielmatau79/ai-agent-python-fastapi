@@ -1,0 +1,11 @@
+[default]
+extend-ignore-re = [
+  "(?i)nd",
+]
+
+[files]
+extend-exclude = [
+  ".git/",
+  "venv/",
+  ".venv/",
+]
