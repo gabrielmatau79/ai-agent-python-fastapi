@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - docs/env-examples/.env.docker.example
+      - ./.env
     ports:
       - "8000:8000"
     depends_on:

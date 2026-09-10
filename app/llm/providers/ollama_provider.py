@@ -27,8 +27,12 @@ class OllamaProvider(BaseLlmProvider):
         tools: list[BaseTool] | None = None,
         metadata: dict[str, object] | None = None,
     ) -> str:
+        _ = tools
+        _ = metadata
         try:
-            result = await self._client.ainvoke(messages, metadata=metadata)
+            # ChatOllama already manages invocation metadata internally; passing it
+            # through here can conflict with the underlying LangChain call path.
+            result = await self._client.ainvoke(messages)
             return str(result.content).strip()
         except Exception as exc:  # pragma: no cover
             raise ExternalServiceError(f"Ollama generation failed: {exc}") from exc
