@@ -38,8 +38,7 @@ class LlmService:
             )
 
     async def close(self) -> None:
-        await self._tools_service.close()
-        await self._mcp_client_service.close()
+        await self._provider.close()
 
     async def generate(self, messages: list[BaseMessage], *, session_id: str) -> str:
         _ = session_id

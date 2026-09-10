@@ -10,6 +10,9 @@ from langchain_core.tools import BaseTool
 class BaseLlmProvider(ABC):
     supports_tools: bool = False
 
+    async def close(self) -> None:
+        return
+
     @abstractmethod
     async def generate(
         self,
