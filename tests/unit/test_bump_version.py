@@ -1,4 +1,3 @@
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -91,12 +90,7 @@ def test_git_commit_messages_strips_leading_newline_from_bodied_commits(
     _git(repo, "add", "a.txt")
     _git(repo, "commit", "-q", "-m", "fix: correct behavior\n\nSigned-off-by: Test <t@example.com>")
 
-    original_cwd = Path.cwd()
-    try:
-        os.chdir(repo)
-        messages = git_commit_messages("HEAD~1..HEAD")
-    finally:
-        os.chdir(original_cwd)
+    messages = git_commit_messages("HEAD~1..HEAD", cwd=repo)
 
     assert len(messages) == 1
     assert messages[0].startswith("fix: correct behavior")
@@ -135,10 +129,10 @@ def _run_bump_cli(repo: Path, *extra_args: str) -> subprocess.CompletedProcess[s
 
 
 def test_read_version_from_git_reads_ref_without_checkout(pr_repo: Path) -> None:
-    assert read_version_from_git("main", "pyproject.toml") == "0.1.0"
+    assert read_version_from_git("main", "pyproject.toml", cwd=pr_repo) == "0.1.0"
     # Bump the branch's working copy; the git-ref read of `main` must be unaffected.
     write_version(pr_repo / "pyproject.toml", "0.2.0")
-    assert read_version_from_git("main", "pyproject.toml") == "0.1.0"
+    assert read_version_from_git("main", "pyproject.toml", cwd=pr_repo) == "0.1.0"
 
 
 def test_bump_cli_applies_bump_from_pr_commits(pr_repo: Path) -> None:
