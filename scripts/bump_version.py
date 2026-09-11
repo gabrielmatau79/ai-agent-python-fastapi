@@ -65,16 +65,21 @@ def read_current_version(pyproject_path: Path) -> str:
     return _extract_version(pyproject_path.read_text(), str(pyproject_path))
 
 
-def read_version_from_git(ref: str, path: str = "pyproject.toml") -> str:
+def read_version_from_git(ref: str, path: str = "pyproject.toml", cwd: Path | None = None) -> str:
     """Read the version line from `path` as it exists at `ref`, without checking it out.
 
     Used to get the pre-PR baseline version (e.g. "origin/main") even when the
     PR branch's own pyproject.toml has already been bumped by a prior run of
     this workflow, so re-runs compute the bump from the same baseline instead
     of stacking another bump on top of an already-applied one.
+
+    `cwd` selects which git repository to query (defaults to the process's
+    working directory) — explicit rather than relying on ambient state, so
+    tests can point it at a throwaway repo instead of the real one.
     """
     text = subprocess.run(
         ["git", "show", f"{ref}:{path}"],
+        cwd=cwd,
         check=True,
         capture_output=True,
         text=True,
@@ -90,12 +95,13 @@ def write_version(pyproject_path: Path, new_version: str) -> None:
     pyproject_path.write_text(new_text)
 
 
-def git_commit_messages(commit_range: str) -> list[str]:
+def git_commit_messages(commit_range: str, cwd: Path | None = None) -> list[str]:
     # "format:" (not the "%x00"-only default "tformat:") avoids git auto-appending
     # a trailing newline per entry, which would otherwise land as a leading "\n"
     # on every message after this one once split on the NUL separator.
     output = subprocess.run(
         ["git", "log", "--format=format:%B%x00", commit_range],
+        cwd=cwd,
         check=True,
         capture_output=True,
         text=True,
